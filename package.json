@@ -1,8 +1,8 @@
 {
-  "name": "oyraa-api-server",
+  "name": "api-server",
   "version": "0.0.1",
   "description": "oyraa-api-server",
-  "author": "Konstant",
+  "author": "Vikrant",
   "private": true,
   "workspaces": [
     "packages/*"
