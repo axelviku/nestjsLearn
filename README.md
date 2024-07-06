@@ -1,4 +1,4 @@
-Node version 18.19.1
+Node version 21.2.1
 
 ## Running the app
 
