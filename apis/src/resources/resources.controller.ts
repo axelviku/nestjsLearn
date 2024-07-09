@@ -11,20 +11,19 @@ import { User } from 'common/schemas/user.schema';
 import { Model, Types } from 'mongoose';
 import { InjectModel } from '@nestjs/mongoose';
 import { AuthGuard } from 'common/guards/auth-guard';
+import { I18nService, I18nLang } from 'nestjs-i18n';
 
 
 
 @ApiTags("Resources")
 @CustomHeaders()
-@UseGuards(AuthGuard)
-@ApiBearerAuth('JWT-auth')
-@UsePipes(GlobalI18nValidationPipe)
 @Controller('resources')
 export class ResourcesController {
     constructor(
         private readonly userService: ResourcesService,
         private readonly responseService: ResponseService,
         private readonly appService: AppService,
+        private readonly i18n: I18nService
         @InjectModel(User.name) private readonly userModel: Model<User>,
       ) {}
 
@@ -40,7 +39,7 @@ export class ResourcesController {
         const data:any   = await this.userService.countryFind(language);
       
         if (data.success) {
-          this.responseService.sendSuccessResponse(res, data.info.country, data.message)
+        this.responseService.sendSuccessResponse(res, data.info.country,this.i18n.t('lang.COUNTRY', { lang : language}) )
         } else {
           this.responseService.sendBadRequest(res,data.message)
         }
