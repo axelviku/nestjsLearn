@@ -39,7 +39,7 @@ export class ResourcesController {
         const data:any   = await this.userService.countryFind(language);
       
         if (data.success) {
-        this.responseService.sendSuccessResponse(res, data.info.country,this.i18n.t('lang.COUNTRY', { lang : language}) )
+        this.responseService.sendSuccessResponse(res, data.info.country,this.i18n.t('validation.Test', { lang : language}) )
         } else {
           this.responseService.sendBadRequest(res,data.message)
         }
