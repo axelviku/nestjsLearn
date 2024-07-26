@@ -1,0 +1,20 @@
+{
+  "OTP_SENT" :"Otp Sent Successfully.",
+  "COUNTRY":"国リストが正常に取得されました",
+  "OTP_VERIFIED": "Otp verified Successfully.",
+  "EXPERTISE_LIST":"Expertise List Fetch succesfully",
+  "LANGUAGE_LIST" : "Language List Fetch succesfully",
+  "CITY_LIST":"City List Fetch succesfully",
+  "CURRENCY_LIST":"Currency List Fetch succesfully",
+  "URL" : "Document uploaded succesfully.",
+  "EMAIL_ALREADY_EXISTS" : "このEメールアドレスは登録済みです。他のEメールアドレスを使用して下さい",
+  "email_registered_with_social": "このEメールアドレスはソーシャルアカウントで登録済みです。ソーシャルアカウントでログインして下さい",
+  "invalid_credentials": "ログイン情報が正しくありません。再度お試し下さい",
+  "email_not_verified": "あなたの電子メールは確認されていません。電子メールであなたのアカウントを有効にしてください",
+  "account_not_active": "アカウントが有効ではありません",
+  "account_not_active_deleted": "ログインできません。アカウントが削除されています。",
+  "login_successfully": "ログイン完了",
+  "data_collection" : "Data collection and analysis updated succesfully.",
+   "sms_limit_reached":"You have reach the limit of one day. Please wait for next day."
+ }
+ 
