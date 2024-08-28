@@ -145,7 +145,7 @@ export class UtilityService {
   }
 
   async roundCurrency(currency_code: any, amount: any) {
-    let currencyRound = {};
+    const currencyRound =  (global as any).currencyRound;
     if (currencyRound[currency_code] == true) {
       const amt = parseInt(amount);
       return Math.round(amt);

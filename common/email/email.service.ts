@@ -88,8 +88,8 @@ export class EmailService {
       deviceVersion: deviceInfo.device_version,
       language: deviceInfo.language,
     };
-    if (emailTemplate.slug == templateName) {
-      const date = moment().utcOffset('+09:00').format('MM-DD-YYYY hh:mm:ss A');
+    const date = moment().utcOffset('+09:00').format('MM-DD-YYYY hh:mm:ss A');
+    if (emailTemplate.slug == 'feedback-bug-report') {
       dbEmailData = dbEmailData.replace('[COMMENT]', message);
       dbEmailData = dbEmailData.replace(
         '[DEVICE_DETAIL]',
@@ -98,6 +98,13 @@ export class EmailService {
       dbEmailData = dbEmailData.replace('[DATE]', `${'JST: ' + date}`);
       dbEmailData = dbEmailData.replace('[FROM]', data.fullName);
       dbEmailData = dbEmailData.replace('[EMAIL]', data.email);
+
+    } else if (emailTemplate.slug == 'quick-pay-notiifcation') {
+      dbEmailData = dbEmailData.replace('[USER_NAME]',data.name);
+      dbEmailData = dbEmailData.replace('[CURRENCY]', data.CURRENCY);
+      dbEmailData = dbEmailData.replace('[AMOUNT]', data.AMOUNT);
+      dbEmailData = dbEmailData.replace('[INTERPRETER]', data.INTERPRETER);
+      dbEmailData = dbEmailData.replace('[DATE]', `${'JST: ' + date}`);
     }
     const mailOptions = {
       from: process.env.FROM_MAIL,

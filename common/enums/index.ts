@@ -86,3 +86,10 @@ export enum USER_ROLE {
   CLIENT = 'client',
   INTERPRETER = 'interpreter',
 }
+
+export enum CALL_TYPE{
+  ONE_TO_ONE = 'onetoone',
+  THREEWAY_CALL = '3way',
+  GROUP_WITH_PSTN = 'groupWithPstn',
+  GROUP_WITHOUT_PSTN = 'groupWithoutPstn'
+}

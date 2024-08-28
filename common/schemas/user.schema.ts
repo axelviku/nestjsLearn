@@ -466,6 +466,12 @@ export class User {
     internetConnection: string;
   };
 
+  @Prop({ type: Number, required: true })
+  lifetimeEarnedCredits: number;
+
+  @Prop({ type: Number, required: true })
+  earnedCredits: number;
+
   @Prop({ type: Date, default: Date.now })
   createdAt: Date;
 

@@ -324,6 +324,7 @@ export class InterpreterService {
         'callDetails.callReceived': -1,
       };
 
+
       if (orderRequest == findInterPreterSortingVariable.INTERPRETER_SCORE) {
         sort_query = {
           ...sort_query,
@@ -360,26 +361,26 @@ export class InterpreterService {
         };
       }
 
-      if (countryId) {
+      if (countryId != undefined  && countryId !="") {
         query = { ...query, 'personalInfo.countryId': countryId };
       }
 
-      if (cityId) {
+      if (cityId != undefined && cityId !="") {
         query = { ...query, 'personalInfo.cityId': cityId };
       }
 
-      if (isOnline) {
+
+      if (isOnline != undefined && isOnline !="") {
         query = { ...query, 'status.isOnline': isOnline };
       }
 
-      if (isProfessionalInterpreter!=="" && isProfessionalInterpreter!=undefined) {
+      if (isProfessionalInterpreter!=="" && isProfessionalInterpreter!=undefined && isProfessionalInterpreter==true) {
         query = {
           ...query,
-          'status.isProfessional': isProfessionalInterpreter,
+          'status.isProfessional': "Verified",
         };
       }
-
-      if (languageFrom != undefined && languageTo != undefined) {
+      if (languageFrom != undefined && languageFrom !="" && languageTo != undefined && languageTo!="") {
         query = {
           ...query,
           'interpreterInfo.interpreterRates': {
@@ -405,7 +406,7 @@ export class InterpreterService {
           };
         }
       }
-
+      
       let referralInterpreterArr = [];
       let referralInterpreterArrObj = [];
   
@@ -429,7 +430,6 @@ export class InterpreterService {
           };
         }
       }
-
       const normalUsers = [];
       const recommendedUser = [];
 
@@ -559,7 +559,7 @@ export class InterpreterService {
             normalUserData[i].interpreterInfo.ratingDetails.avgRating,
           totalRating:
             normalUserData[i].interpreterInfo.ratingDetails.totalRating,
-
+          isRecommended:false,
           languages: languages,
           expertiseList: await this.utilService.dataMapperArray(
             normalUserData[i].interpreterInfo?.expertiseList,
@@ -586,8 +586,7 @@ export class InterpreterService {
           rates: normalUserData[i].interpreterInfo.interpreterRates.map(
             (obj) => {
               const currencyRates = (global as any).currencyRates;
-              const preferedCurr =
-                normalUserData[i].personalInfo.preferredCurrency;
+              const preferedCurr =   personalInfo?.preferredCurrency;
               return {
                 currency: preferedCurr,
                 fee: this.currencyService.roundCurrency(
@@ -917,21 +916,16 @@ export class InterpreterService {
         { "interpreterInfo.professional.docs._id": new mongoose.Types.ObjectId(docs),_id:userId },
         { "interpreterInfo.professional.docs.$": 1, _id: 0 } 
       );
-      console.log(subobjectData)
+
       if(subobjectData?.interpreterInfo?.professional?.docs){
         await this.s3Service.deleteObj(subobjectData.interpreterInfo.professional.docs[0].documents);
       }
-
-      
 
       const result = await this.userModel.findOneAndUpdate(
         { _id: userId },
         update,
         { new: true },
       );
-
-     
-
       return result && result?.interpreterInfo?.professional;
     } catch (error) {
       this.logger.error(
@@ -953,7 +947,7 @@ export class InterpreterService {
 
       const reviewDetails = await this.reviewModel
         .find(query)
-        .populate('ratedBy', '_id name personalInfo status')
+        .populate('ratedBy', '_id name personalInfo status fullName')
         .limit(limitRecord)
         .sort({ _id: -1 })
         .skip(skip);
@@ -979,6 +973,7 @@ export class InterpreterService {
             return userReviewData;
           }),
         );
+        
       }
 
       return {

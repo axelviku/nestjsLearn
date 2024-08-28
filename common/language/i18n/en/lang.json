@@ -83,5 +83,20 @@
     "MISSING": "There is no card on a customer that is being charged.",
     "PROCESSING_ERROR": "An error occurred while processing the card.",
     "RATE_LIMIT": "An error occurred due to requests hitting the API too quickly. Please let us know if you're consistently running into this error.",
-    "COMMON_DETAIL_SUCCESSFULLY": "Common details get succesfully"
+    "COMMON_DETAIL_SUCCESSFULLY": "Common details get succesfully",
+    
+    "NOTIFICATION": {
+        "NEW_CALL_NOTIFICATION": "You have missed a call",
+        "NEW_CONFERENCE_NOTIFICATION": "You have a confernce call in next 5 minutes",
+        "MISSED_CALL_PING_NOTIFICATION": "is now available for a call",
+        "LAST_PAYMENT_DUE_NOTIFICATION": "Last call's payment is due",
+        "YOU_JUST_RECEIVED_NEW_JOB_REQUEST": "You just received new job request",
+        "CONGRATS_USER_JUST_PAID_TO_YOU": "Congratulations,  [USERNAME] just paid you [AMOUNT] [CURRENCY]!",
+        "PAYMENT_DUE": "Payment Due",
+        "PAYMENT_RECEIVED": "Payment Received",
+        "SEND_INTERPRETER_CALL_REQUEST": "You have a new call request",
+        "INTERPRETER_APPROVED_CALL_REQUEST": "The interpreter has approved call request",
+        "SEND_CUSTOMER_UPDATED_CALL_REQUEST": "The customer has updated call request",
+        "NEW_VIDEO_CALL": "new video call"
+    }
 }

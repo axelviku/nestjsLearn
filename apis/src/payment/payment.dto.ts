@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import { IsInt, IsNotEmpty, Matches } from 'class-validator';
 
@@ -47,11 +47,11 @@ export class addCardDataDto {
 export class deleteCardDataDto {
     @IsNotEmpty({ message: 'Please enter a valid cardId.' })
     @ApiProperty({
-       example :"card_1PqCX5BmXDXZipJz86swFH6F",
-       required : true
+        example: "card_1PqCX5BmXDXZipJz86swFH6F",
+        required: true
     })
-    cardId : string
- }
+    cardId: string
+}
 
 export class setDefaultCardDataDto {
     @IsNotEmpty({ message: 'Please enter a valid customerStripeId.' })
@@ -67,4 +67,32 @@ export class setDefaultCardDataDto {
         required: true,
     })
     cardId: string;
- }
+}
+
+export class sendAmountDto {
+    @IsNotEmpty({ message: 'Please select amount' })
+    @ApiProperty({
+        example: 100,
+        required: true
+    })
+    amount: number
+    
+    @IsNotEmpty({ message: 'Please enter valid carId' })
+    @ApiProperty({
+        example: 'card_1PqDiIBmXDXZipJzlnmWZobi',
+        required: true
+    })
+    cardId: string
+
+    @IsNotEmpty({ message: 'Please enter interpreterId' })
+    @ApiProperty({
+        example: '669a095ff75714f4fffa6e22',
+        required: true
+    })
+    interpreterId: string
+
+    @ApiPropertyOptional({
+        example: 'Your interpretation skill is good. so i am happy with your skill and want to tip you money.',
+    })
+    description: string
+}

@@ -7,6 +7,7 @@ import { Transaction } from 'common/schemas/transaction.schema';
 import { MyLogger } from 'apis/src/my-logger.service';
 import { I18nService } from 'nestjs-i18n';
 import { constant } from 'common/constant/constant';
+import { UtilityService } from './utils.service';
 
 @Injectable()
 export class StripeService {
@@ -16,14 +17,15 @@ export class StripeService {
     @InjectModel(User.name) private readonly userModel: Model<User>,
     @InjectModel(Transaction.name) private readonly transactionModel: Model<Transaction>,
     private readonly logger: MyLogger,
-    private readonly i18n: I18nService
+    private readonly i18n: I18nService,
+    private readonly utilService: UtilityService
   ) {
     this.stripe = new Stripe(process.env.NODE_ENV == 'development' ? process.env.STRIPE_SECRET_KEY : process.env.STRIPE_SECRET_KEY, {
       apiVersion: '2024-06-20',
     });
   }
 
-  async createCustomer(email: string, name : string,countryCode:string) {
+  async createCustomer(email: string, name: string, countryCode: string) {
     try {
       const customer = await this.stripe.customers.create({
         email: email,
@@ -32,8 +34,6 @@ export class StripeService {
           country: countryCode
         }
       });
-      console.log(customer);
-      
       return { success: true, customerId: customer.id };
     } catch (error) {
       return { success: false, customer: 'error' }
@@ -239,4 +239,127 @@ export class StripeService {
     }
     return messageDisplay
   }
+
+  async quickpayWithInvoice(cardId: string, amount: number, currency: string, customerId: string, description: string) {
+    try {
+      let invoiceItemId = '';
+      console.log("quickpayWithInvoice=====> invoice item creation !! ", cardId, amount, currency, customerId, process.env.OYRAA_CONSUMPTION_TAX, process.env.OYRAA_SERVICE_CHARGE);
+
+      if (amount && currency && customerId) {
+        console.log("quickpayWithInvoice=====> invoice item creation !! ");
+        try {
+          // Update the customer with default payment method
+
+          const dd = await this.stripe.customers.update(customerId, {
+            default_source: cardId,
+            invoice_settings: { default_payment_method: cardId },
+          });
+
+          // Create invoice item
+          const invoiceItem: any = await this.stripe.invoiceItems.create({
+            customer: customerId,
+            description: description,
+            unit_amount: amount, // Amount in cents
+            currency:currency,
+            quantity: 1,
+          });
+
+          // console.log("--------------", invoiceItem);
+          invoiceItemId = invoiceItem.id;
+
+          // Create invoice
+          const invoice = await this.stripe.invoices.create({
+            customer: invoiceItem.customer,
+            currency: currency,
+            collection_method: "charge_automatically",
+            default_tax_rates: [
+              process.env.OYRAA_CONSUMPTION_TAX,
+              process.env.OYRAA_SERVICE_CHARGE,
+            ],
+            default_source: cardId,
+            auto_advance: true,
+            pending_invoice_items_behavior: 'include'
+          });
+          let paymentResult: any;
+          if (cardId) {
+            console.log("quickpayWithInvoice=====> invoice creation ====> Pay With SOURCE ID !! ",);
+            paymentResult = await this.stripe.invoices.pay(invoice.id, {
+              source: cardId,
+            });
+          } else {
+            console.log("quickpayWithInvoice=====> invoice creation ====> Pay Without SOURCE ID !! ");
+            paymentResult = await this.stripe.invoices.pay(invoice.id);
+          }
+
+          if (paymentResult && paymentResult.status === "paid") {
+            console.log("quickpayWithInvoice=====> Payment success paid case !! " );
+            return {
+              id: paymentResult.charge,
+              invoice_url: paymentResult.hosted_invoice_url,
+              service_fee_amount: paymentResult.total_tax_amounts[1]?.amount / 100,
+              consumption_tax_amount: paymentResult.total_tax_amounts[0]?.amount / 100,
+            };
+          } else {
+            console.log("quickpayWithInvoice=====> Payment fail case !! ");
+            return { success: false, message: "Payment failed" }
+          }
+        } catch (err) {
+          console.error("quickpayWithInvoice=====> Error: ", err);
+          if (invoiceItemId) {
+            // Delete the invoice item if there's an error
+            await this.stripe.invoiceItems.del(invoiceItemId);
+          }
+          return { success: false, message: err.message }
+        }
+      } else {
+        console.log("payWithInvoiceForQuickPay=====> else case -> EMPTY !!");
+        return { success: false, message: "Invalid payment data" }
+      }
+    } catch (error) {
+      return { success: false, message: error.message }
+    }
+  }
+
+  async getPricesQuickPay(amount: number, priceDetails: any) {
+    try {
+      const currencyRates = (global as any).currencyRates;
+      const totalAmount = amount;
+      // totalAmount to credits
+      const usedCredits = await this.utilService.roundCurrency(
+        priceDetails.creditsCurrency,
+        totalAmount * currencyRates[priceDetails.currency][priceDetails.creditsCurrency]
+      );
+
+     // Calculate earnings deduction and share
+      const earningsDeduction = (usedCredits * 60) / 100;
+      const share = parseFloat(((usedCredits - earningsDeduction) * currencyRates[priceDetails.creditsCurrency]["USD"]).toFixed(2));
+
+     // Convert totalAmount to earning currency
+      const totalAmount1 = await this.utilService.roundCurrency(
+        priceDetails.earningCurrency,
+        totalAmount * currencyRates[priceDetails.currency][priceDetails.earningCurrency]
+      );
+
+      //Calculate earnings
+      const earnings = await this.utilService.roundCurrency(
+        priceDetails.earningCurrency,
+        (totalAmount1 * 60) / 100
+      );
+
+      //Return results through callback
+      console.log("payment service",usedCredits,earnings,share);
+      
+      return {
+        success:true,
+        credits: usedCredits,
+        earning: earnings,
+        share: share,
+      }
+    } catch (error) {
+      return {
+        success:false, message :error.message
+      }
+    }
+  }
 }
+

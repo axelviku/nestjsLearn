@@ -7,15 +7,24 @@ import { StripeService } from 'common/utils/stripe.service';
 import { User } from 'common/schemas/user.schema';
 import { MyLogger } from '../my-logger.service';
 import { UtilityService } from 'common/utils/utils.service';
+import { constant } from 'common/constant/constant';
+import { Transaction } from 'common/schemas/transaction.schema';
+import { QuickPay } from 'common/schemas/quickpay.schema';
+import { EmailService } from 'common/email/email.service';
+import { PushNotificationService } from 'common/utils/notification.service';
 
 @Injectable()
 export class PaymentService {
   constructor(
     @InjectModel(User.name) private readonly userModel: Model<User>,
+    @InjectModel(Transaction.name) private readonly transactionModel: Model<Transaction>,
+    @InjectModel(QuickPay.name) private readonly quickPayModel: Model<QuickPay>,
     private readonly stripeService: StripeService,
     private readonly i18n: I18nService,
     private readonly logger: MyLogger,
     private readonly utilService: UtilityService,
+    private readonly emailService: EmailService,
+    private readonly pushNotificationService: PushNotificationService,
   ) { }
 
   async addCard(userDetail: any, cardDetails: any, applanguage: string): Promise<object> {
@@ -24,8 +33,8 @@ export class PaymentService {
       let customerType: string;
       let customerStripeId: string;
       if (!userDetail.stripeInfo?.customerId) {
-        const customer: any = await this.stripeService.createCustomer(userDetail.email, userDetail.fullName,userDetail.personalInfo.countryId.dialCode);
-        if (customer.success === false) {
+        const customer: any = await this.stripeService.createCustomer(userDetail.email, userDetail.fullName, userDetail.personalInfo.countryId.dialCode);
+        if (customer && customer.success === false) {
           return {
             success: false,
             info: {
@@ -40,10 +49,10 @@ export class PaymentService {
         customerStripeId = userDetail.stripeInfo.customerId;
       }
       const token: any = await this.stripeService.createToken(cardDetails);
-      
-      if (token.success === false) {
-        console.log("error token");
-        const data = await this.stripeService.paymentMessage(token.tokenDetail.raw,applanguage);
+
+      if (token && token.success === false) {
+        this.logger.error(`/payment/addCard/ card=====> token `, token);
+        const data = await this.stripeService.paymentMessage(token.tokenDetail.raw, applanguage);
         return {
           success: false,
           info: {
@@ -52,9 +61,9 @@ export class PaymentService {
         }
       }
       const card: any = await this.stripeService.createSource(customerStripeId, token.tokenDetail.id);
-      if (card.success === false) {
-        console.log("error card"); 
-        const data = await this.stripeService.paymentMessage(card.cardDetails.raw,applanguage);
+      if (card && card.success === false) {
+        this.logger.error(`/payment/addCard/ card=====> error `, card);
+        const data = await this.stripeService.paymentMessage(card.cardDetails.raw, applanguage);
         return {
           success: false,
           info: {
@@ -63,15 +72,15 @@ export class PaymentService {
         }
       }
       await this.stripeService.setDefaultCard(customerStripeId, card.cardDetails.id);
-      
-      if(userDetail.stripeInfo && userDetail.stripeInfo.cardData){
-        await this.userModel.updateMany(
+
+      if (userDetail.stripeInfo && userDetail.stripeInfo.cardData) {
+        await this.userModel.updateOne(
           { _id: userDetail._id },
           { $set: { 'stripeInfo.cardData.$[elem].isDefault': false } },
           { arrayFilters: [{ 'elem.isDefault': true }] }
         );
       }
-    
+
       let cardBrand = card.cardDetails.brand ? card.cardDetails.brand : null;
       if (cardBrand && cardBrand === 'MasterCard') {
         cardBrand = cardBrand.toLowerCase().replace(/\b[a-z]/g, (letter) => letter.toUpperCase());
@@ -108,10 +117,11 @@ export class PaymentService {
       let updatedCurrency = 'USD';
       price = process.env.CARD_CHARGE_AMOUNT ? process.env.CARD_CHARGE_AMOUNT : 1;
       price = await this.utilService.roundCurrency("USD", price);
-      let chargeAmount: number = 1 * 100;
-      
+      let chargeAmount: any = parseInt(process.env.CARD_CHARGE_AMOUNT) * 100;
+
       const chargeCreate = await this.stripeService.stripeChargePayment(userDetail._id, card.cardDetails.id, chargeAmount, updatedCurrency, customerStripeId, price, cardBrand);
       if (chargeCreate.success === false) {
+        this.logger.error(`/payment/addCard/ chargeCreate=====> error `, chargeCreate);
         return {
           success: false,
           info: {
@@ -129,8 +139,6 @@ export class PaymentService {
         message: this.i18n.t('lang.CARD_ADD', { lang: applanguage })
       }
     } catch (error) {
-      console.log(error);
-      
       this.logger.error(`/payment/addCard/=====> error`, error);
       return {
         success: false,
@@ -236,6 +244,154 @@ export class PaymentService {
         info: {
         },
         message: error.message
+      }
+    }
+  }
+
+  async quickPayByCard(postBody: any, stripeInfo: any, _id: string, fullName: string, userCurrency: string, appLanguage: string): Promise<object> {
+    try {
+      const { cardId, amount, interpreterId, description } = postBody;
+      const currencyRates = (global as any).currencyRates;
+      const credits: any = await this.utilService.roundCurrency(userCurrency, amount);
+      const price = parseFloat((credits * currencyRates[userCurrency]['USD']).toFixed(2));
+
+      console.log('quickpay-bycard====> ', fullName, interpreterId);
+      const interpreter: any = await this.userModel.findOne({
+        _id: postBody.interpreterId,
+        'status.isActive': true,
+      })
+
+      if (!interpreter) {
+        return {
+          success: false,
+          info: {
+
+          },
+          message: 'Interpreter not found'
+        }
+      }
+      let brand = ''
+      for (let i = 0; i < stripeInfo.cardData.length; i++) {
+        if (stripeInfo.cardData[i].cardId == cardId) {
+          brand = stripeInfo.cardData[i].brand;
+          break;
+        }
+      }
+
+      let chargeAmount = Math.round(price * 100);
+      let currency = 'USD';
+      if (brand === constant.JCB) {
+        currency = 'JPY';
+        const stripePrice = parseFloat((credits * currencyRates[currency]['JPY']).toFixed(2));
+        chargeAmount = Math.round(stripePrice);
+      }
+      try {
+        const charge: any = await this.stripeService.quickpayWithInvoice(
+          cardId,
+          chargeAmount,
+          currency,
+          stripeInfo.customerId,
+          'Quick Pay Amount',
+        );
+        console.log("charge", charge);
+
+        let consumptionTaxAmount: number = 0;
+        let serviceFeeAmount: number = 0;
+        if (charge.currency === 'usd') {
+          consumptionTaxAmount = charge.consumption_tax_amount / 100;
+          serviceFeeAmount = charge.service_fee_amount / 100;
+        } else {
+          consumptionTaxAmount = parseFloat((charge.consumption_tax_amount * currencyRates['JPY']['USD']).toFixed(2));
+          serviceFeeAmount = parseFloat((charge.service_fee_amount * currencyRates['JPY']['USD']).toFixed(2));
+        }
+        const newTransaction = {
+          userId: _id,
+          gateway: 'stripe',
+          type: 'credit',
+          amount: price,
+          currency: 'USD',
+          paymentId: charge.id,
+          status: 'approved',
+          consumptionTaxAmount,
+          serviceFeeAmount,
+        };
+
+        await this.transactionModel.create(newTransaction);
+        const details: any = {
+          creditsCurrency: currency,
+          earningCurrency: interpreter.personalInfo.preferredCurrency,
+          shareCurrency: 'USD',
+          currency: currency,
+        };
+        const priceData = await this.stripeService.getPricesQuickPay(amount, details)
+        if (priceData.success == true) {
+          details.credits = priceData.credits;
+          details.earning = priceData.earning;
+          details.share = priceData.share;
+          details.userId = new mongoose.Types.ObjectId(_id);
+          details.interpreterId = new mongoose.Types.ObjectId(interpreterId);
+          details.description = description;
+          details.consumptionTaxAmount = consumptionTaxAmount;
+          details.serviceFeeAmount = serviceFeeAmount;
+          details.consumptionTaxPercentage = process.env.CONSUMPTION_TAX_PERCENTAGE;
+          details.serviceFeePercentage = process.env.SERVICE_FEE_PERCENTAGE;
+          const savedQuickPay: any = await this.quickPayModel.create(details);
+
+          await this.userModel.updateOne(
+            { _id: interpreterId },
+            { $inc: { earnedCredits: details.earning, lifetimeEarnedCredits: details.earning } },
+          );
+
+          if (interpreter._id && interpreter.token.arn) {
+            const notificationData = {
+            activity: 'Payment Received',
+            os: interpreter.deviceInfo.os,
+            badge: 0,
+            language: interpreter.deviceInfo.language || 'en',
+            userId: interpreter._id.toString(),
+            clientName: fullName,
+            currency: savedQuickPay.earningCurrency,
+            amount: savedQuickPay.earning,
+            };
+            await this.pushNotificationService.sendNotification(notificationData, interpreter.token.arn);
+          }
+          const lang = interpreter.deviceInfo.language || 'en';
+          await this.emailService.sendEmailMailTemplate(
+            'quick-pay-notiifcation',
+            {
+              email: interpreter.email,
+              INTERPRETER: interpreter.fullName,
+              name: fullName,
+              CURRENCY: savedQuickPay.earningCurrency,
+              AMOUNT: savedQuickPay.earning,
+            },
+            '',
+            '',
+            lang,
+          );
+          return { success: true, info: {}, message: 'Quickpay amount successfully sent to Interpreter' };
+        }
+      } catch (err) {
+        console.log("service ", err);
+        const newTransaction = {
+          userId: _id,
+          gateway: 'stripe',
+          type: 'credit',
+          amount: price,
+          currency: 'USD',
+          paymentId: '',
+          status: 'failed',
+          description: err.message || 'Unable to deduct amount',
+        };
+        await this.transactionModel.create(newTransaction);
+        return {
+          success: false, info: {}, message: 'Payment failed'
+        }
+      }
+    } catch (error) {
+      console.log("Try1", error);
+      return {
+        success: false, info: {}, message: error.message
       }
     }
   }

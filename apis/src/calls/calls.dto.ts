@@ -8,3 +8,7 @@ export class CallsTokenDataDto{
 export class VoiceCallDataDto{
 
 }
+
+export class VoiceResponseCallDataDto{
+
+}

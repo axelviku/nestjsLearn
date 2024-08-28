@@ -61,9 +61,9 @@ export class CallsService {
     this.twilioClient = Twilio(this.twilioApiKey, this.twilioApiSecret, {
       accountSid: this.twilioAccountSid,
     });
-    this.twilioClient.logLevel = 'debug'; 
+    // this.twilioClient.logLevel = 'debug'; 
     this.twilioClientCall = Twilio(this.twilioAccountSid, this.twilioAuthToken);
-    this.twilioClientCall.logLevel = 'debug'; 
+    // this.twilioClientCall.logLevel = 'debug'; 
   }
 
   async requestCallingVoiceToken(
@@ -229,50 +229,49 @@ export class CallsService {
     }
   }
 
-  async voiceCallWebhookResponse(voiceCallData:any,language:string){
+  async voiceCallWebhookResponse(voiceCallData:any){
     try {
       this.logger.log(
         `/calls/voice/=====> request Body : `,voiceCallData
       );
-      
 
-      // const callResponse = await this.twilioClientCall.calls.create({
-      //   from: "+18668675310",
-      //   method: "POST",
-      //   statusCallback: "http://44.227.114.189:4000/calls/voice-response",
-      //   statusCallbackEvent: ["initiated", "ringing", "completed", "answered"],
-      //   statusCallbackMethod: "POST",
-      //   to: "+14155551212",
-      //   url: " http://44.227.114.189:4000/calls/voice",
-      // });
+      const callResponse = await this.twilioClientCall.calls.create({
+        from: voiceCallData.From,
+        method: "POST",
+        statusCallback: "http://44.227.114.189:4000/calls/voiceResponse",
+        statusCallbackEvent: ["initiated", "ringing", "completed", "answered"],
+        statusCallbackMethod: "POST",
+        to: `client:${voiceCallData.To}`,
+        url: "http://44.227.114.189:4000/calls/voice",
+      });
 
       this.logger.log(
-        `/calls/voice/=====> request Body : `,voiceCallData
+        `/calls/voice/=====> callResponse : `,callResponse
       );
-
-      // this.twimlResponse.say(
-      //   {
-      //     voice: "alice",
-      //   },
-      //   "Calling Webhook is successfully retrieved the Request call body !!!"
-      // );
-
-      return this.twimlResponse.toString();
+      return {
+        success: true,
+        info: {
+        },
+        message: 'success request',
+      };
 
     } catch (error) {
       this.logger.error(
         `/calls/token/=====> voice S ===> error : `,
         error,
       );
-      this.twimlResponse.say(
-        {
-          voice: "alice",
+      return {
+        success: false,
+        info: {
         },
-        "Something went wrong with the call. Please try again in sometime."
-      );
-      return this.twimlResponse.toString();
+        message: error.message,
+      };
 
     }
+  }
+
+  async twimlVoiceResponse(){
+    return this.twimlResponse.toString();
   }
 
   async voiceCallWebhookInvalidResponse(){

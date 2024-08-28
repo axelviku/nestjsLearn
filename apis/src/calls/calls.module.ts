@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { CallsService } from './calls.service';
 import { CallsController } from './calls.controller';
@@ -17,6 +17,8 @@ import { TwilioService } from 'common/utils/twilio.service';
 import { CommonService } from 'common/utils/common.services';
 import { MyLogger } from '../my-logger.service';
 import { RequestOtpSchema } from 'common/schemas/requestOtp.schema';
+
+// import * as bodyParser from 'body-parser';
 
 
 @Module({
@@ -42,4 +44,10 @@ import { RequestOtpSchema } from 'common/schemas/requestOtp.schema';
     CommonService,
   ],
 })
-export class CallsModule {}
+// export class CallsModule implements NestModule{
+//   configure(consumer: MiddlewareConsumer) {
+//     consumer.apply(bodyParser.urlencoded({ extended: true })).forRoutes(CallsController);
+//   }
+// }
+export class CallsModule {
+}

@@ -1847,8 +1847,6 @@ export class AuthService {
     try {
 
       this.logger.log(`/auth/getCommonDetails/=====>`);
-
-      console.log(userDetails._id);
       const data = {
         referalData : (userDetails.userReferralCode) ? userDetails.userReferralCode : {},
         notificationCount : 2,

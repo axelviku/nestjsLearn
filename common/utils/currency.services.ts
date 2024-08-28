@@ -17,10 +17,19 @@ export class CurrencyService {
       const currencyRates = await this.getCurrencyRates();
       (global as any).currencyRates = currencyRates;
 
-      // this.logger.log(
-      //   'currencyRates====> Result : ',
-      //   currencyRates && currencyRates.USD,
-      // );
+      const currencyRound = {};
+
+
+      //Mange this for round currency
+      const currencies:any = await this.currencyModel
+          .find().exec();
+          currencies.map(function (currency) {
+        currency = currency.toObject();
+        currencyRound[currency.baseCurrency] = currency.isRound;
+      });
+      (global as any).currencyRound = currencyRound;
+
+
     } catch (err) {
       this.logger.error(
         'currencyRates====> Failed to fetch currency rates => Error : ',
@@ -65,7 +74,7 @@ export class CurrencyService {
     return currencyRates;
   }
   roundCurrency(currency_code: any, amount: any) {
-    let currencyRound = {};
+    const currencyRound =  (global as any).currencyRound;
     if (currencyRound[currency_code] == true) {
       const amt = parseInt(amount);
       return Math.round(amt);

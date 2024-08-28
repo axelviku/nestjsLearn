@@ -30,24 +30,59 @@ import {
   ApiBearerAuth,
   ApiQuery,
 } from '@nestjs/swagger';
-import { CallsTokenDataDto, VoiceCallDataDto } from './calls.dto';
+import { CallsTokenDataDto, VoiceCallDataDto, VoiceResponseCallDataDto } from './calls.dto';
 import { TwilioService } from 'common/utils/twilio.service';
 
-@UseGuards(AuthGuard)
-@ApiBearerAuth('JWT-auth')
+import * as Twilio from 'twilio';
+import { jwt } from 'twilio';
+
 @ApiTags('Calls')
 @CustomHeaders()
 @UsePipes(GlobalI18nValidationPipe)
 @Controller('calls')
 export class CallsController {
+
+  private twilioAccountSid: string;
+  private twilioAuthToken: string;
+  private twilioAppSid: string;
+  private twilioApiSecret: string;
+  private androidPushSid: string;
+  private iosPushSid: string;
+  private twilioApiKey:string;
+  private twilioClient:Twilio.Twilio;
+  private twilioClientCall:Twilio.Twilio;
+  private VoiceGrant = jwt.AccessToken.VoiceGrant;
+  private VoiceResponse = Twilio.twiml.VoiceResponse;
+  private twimlResponse: any;
+
   constructor(
     private readonly callsService: CallsService,
     private readonly responseService: ResponseService,
     private readonly twilioService : TwilioService,
     private readonly i18n: I18nService,
     private readonly logger: MyLogger,
-  ) {}
+  ) {
 
+    this.twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+    this.twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+    this.twilioApiSecret = process.env.TWILIO_API_SECRET;
+    this.twilioAppSid = process.env.TWILIO_APP_SID;
+    this.androidPushSid = process.env.ANDROID_PUSH_SID;
+    this.iosPushSid = process.env.IOS_PUSH_SID;
+    this.twilioApiKey = process.env.TWILIO_API_KEY;
+    this.twimlResponse = new this.VoiceResponse();
+    this.twilioClient = Twilio(this.twilioApiKey, this.twilioApiSecret, {
+      accountSid: this.twilioAccountSid,
+    });
+    // this.twilioClient.logLevel = 'debug'; 
+    this.twilioClientCall = Twilio(this.twilioAccountSid, this.twilioAuthToken);
+    // this.twilioClientCall.logLevel = 'debug'; 
+
+  }
+
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Calling Token Service Register.',
   })
@@ -68,10 +103,10 @@ export class CallsController {
         _id, roleId, appLanguage, os, currency, unlimitedAccess, userReferralCode, stripeInfo, referralFreeMinutes
       );
 
-      this.logger.log(
-        `/auth/requestOtp/=====> voiceTokenData : `,
-        voiceTokenData,
-      );
+      // this.logger.log(
+      //   `/auth/requestOtp/=====> voiceTokenData : `,
+      //   voiceTokenData,
+      // );
 
       if (
         voiceTokenData &&
@@ -102,25 +137,89 @@ export class CallsController {
   })
   @Post('/voice')
   async voice(
-    @Body() voiceCallData: VoiceCallDataDto,
+    @Body()
     @Res() res: Response,
     @Req() req: Request,
   ): Promise<void> {
     try {
       this.logger.log(`/calls/voice/=====>`);
-      const { _id, roleId, appLanguage, os, currency, unlimitedAccess, userReferralCode, stripeInfo } = req['userData'];
-      this.logger.log(
-        `/calls/voice/=====> Login Data :  `,
-        req['userdata'],
+      this.logger.log(`/calls/voice/=====> voiceCallData : `, req.body);
+
+      const VoiceResponse = Twilio.twiml.VoiceResponse;
+      const twiml = new VoiceResponse();
+      // this.logger.log(`/calls/voice/=====> twimlRes : `, twimlRes);
+      // const twimlData = this.callsService.voiceCallWebhookResponse(req.body);
+      // this.logger.log(`/calls/voice/=====> twimlData : `, twimlData);
+      // const twiml = `<Response><Say>Hello, Thank you for calling! Please wait while we connect you. your call has been received.</Say></Response>`;
+      // const twiml = new this.VoiceResponse();
+      twiml.say(
+        {
+          voice: "alice",
+        },
+        `Hello, Thank you for calling! Please wait while we connect you. your call has been received.`
       );
-      const twiml = this.callsService.voiceCallWebhookResponse(voiceCallData,appLanguage);
-      res.set('Content-Type', 'text/xml');
-      res.send(twiml);
+      // res.setHeader('Content-Type', 'text/xml');
+      res.type('text/xml');
+      res.send(twiml.toString());
 
     } catch (error) {
       this.logger.error(`/calls/voice=====> Catch C Error : `, error);
-      const twiml = this.callsService.voiceCallWebhookInvalidResponse();
-      res.set('Content-Type', 'text/xml');
+      const VoiceResponse = Twilio.twiml.VoiceResponse;
+      const twiml = new VoiceResponse();
+
+      twiml.say(
+        {
+          voice: "alice",
+        },
+        `Something went wrong with the call. Please try again in sometime.`
+      );
+      // res.setHeader('Content-Type', 'text/xml');
+      res.type('text/xml');
+      res.send(twiml.toString());
+      // const twiml = new this.VoiceResponse();
+      // twiml.say(
+      //   {
+      //     voice: "alice",
+      //   },
+      //   "Something went wrong with the call. Please try again in sometime."
+      // );
+      // res.setHeader('Content-Type', 'text/xml');
+      // const twiml = `<Response><Say>Hello, Something went wrong with the call. Please try again in sometime.</Say></Response>`;
+      // res.set('Content-Type', 'text/xml');
+      // res.send(twiml);
+    }
+  }
+
+  @ApiOperation({
+    summary: 'Voice Response For Calls',
+  })
+  @Post('/voiceResponse')
+  async voiceResponse(
+    @Res() res: Response,
+    @Req() req: Request,
+  ): Promise<void> {
+    try {
+      this.logger.log(`/calls/voiceResponse/=====>`);
+
+      this.logger.log(
+        `/calls/voiceResponse/=====> voiceResponseCallData :  `,
+        req.body
+      );
+   
+      const twiml = this.callsService.twimlVoiceResponse();
+      res.setHeader('Content-Type', 'text/xml');
+      res.send(twiml);
+
+    } catch (error) {
+      this.logger.error(`/calls/voiceResponse=====> Catch C Error : `, error);
+      const twiml = new this.VoiceResponse();
+      twiml.say(
+        {
+          voice: "alice",
+        },
+        "Something went wrong with the call. Please try again in sometime."
+      );
+      res.setHeader('Content-Type', 'text/xml');
       res.send(twiml);
     }
   }

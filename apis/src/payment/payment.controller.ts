@@ -34,7 +34,9 @@ import {
   addCardDataDto,
   deleteCardDataDto,
   setDefaultCardDataDto,
+  sendAmountDto
 } from './payment.dto';
+import { userInfo } from 'os';
 @UseGuards(AuthGuard)
 @ApiBearerAuth('JWT-auth')
 @ApiTags('Payment')
@@ -193,6 +195,21 @@ export class PaymentController {
         `/payment/setDefaultCard=====> Catch C Error : `,
         error,
       );
+      this.responseService.sendForbidden(res);
+    }
+  }
+
+  @ApiOperation({ summary : 'Send money/tip to interpreter'})
+  @Post('/sendPayment')
+  async sendMoney (@Body() amountData : sendAmountDto,@Res() res: Response, @Req() req:Request): Promise<void>{
+    try {
+      const {_id,appLanguage,stripeInfo,fullName,currency} = req['userData']
+      const data : any = await this.paymentService.quickPayByCard(amountData,stripeInfo,_id,fullName,currency,appLanguage);
+      if(data && data.success && data.success === true ){
+        this.responseService.sendSuccessResponse(res, data.info,data.message);
+      }
+    } catch (error) {
+      console.log("controller",error);
       this.responseService.sendForbidden(res);
     }
   }

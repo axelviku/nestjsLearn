@@ -20,6 +20,8 @@ import { MongooseDbModule } from 'common/dbconfig/mongoose.module';
 import { ResponseService } from 'common/services/response.service';
 import { LanguageModule } from '../../common/language/language.module';
 
+import * as bodyParser from 'body-parser';
+
 /** Apis files imports here */
 
 import { AppController } from './app.controller';
@@ -61,6 +63,8 @@ import { UserRoleSchema } from 'common/schemas/userRole.schema';
 import { SettingSchema } from 'common/schemas/setting.schema';
 import { CoverageSchema } from 'common/schemas/coverage.schema';
 import { TransactionSchema } from 'common/schemas/transaction.schema';
+import { QuickPaySchema } from 'common/schemas/quickpay.schema';
+import { NotificationErrorSchema } from 'common/schemas/notificationErr.schema';
 import { HomeService } from './home/home.service';
 import { InterpreterService } from './interpreter/interpreter.service';
 import { InterpreterModule } from './interpreter/interpreter.module';
@@ -85,6 +89,7 @@ import { CallsModule } from './calls/calls.module';
 import { CallsService } from './calls/calls.service';
 import { VideoCallsModule } from './videoCalls/videoCalls.module';
 import { VideoCallsService } from './videoCalls/videoCalls.service';
+import { PushNotificationService } from 'common/utils/notification.service';
 
 @Module({
   imports: [
@@ -117,6 +122,8 @@ import { VideoCallsService } from './videoCalls/videoCalls.service';
       { name: 'Coverage', schema: CoverageSchema },
       { name: 'Review', schema: ReviewSchema },
       { name: 'Transaction', schema: TransactionSchema },
+      { name: 'QuickPay', schema: QuickPaySchema },
+      { name: 'NotificationError', schema: NotificationErrorSchema },
       
     ]),
     AuthModule,
@@ -165,7 +172,8 @@ import { VideoCallsService } from './videoCalls/videoCalls.service';
     PaymentService,
     JobPostingService,
     CallsService,
-    VideoCallsService
+    VideoCallsService,
+    PushNotificationService
   ],
 })
 export class AppModule implements NestModule {
@@ -178,6 +186,6 @@ export class AppModule implements NestModule {
 
     consumer
       .apply(CurrencyService)
-      .forRoutes({ path: '*', method: RequestMethod.ALL });
+      .forRoutes({ path: '*', method: RequestMethod.ALL });  
   }
 }

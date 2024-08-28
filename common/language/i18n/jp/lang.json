@@ -63,5 +63,21 @@
   "ERROR_CURRENCY_UPDATE":"Error in updated prefered currency !!",
   "BUG_REPORT":"Bug report submitted succesfully.",
   "ERROR_BUG_REPORT":"Bug report not submitted.",
-  "ACCOUNT_DELETE_PROCESS": "Account deletion process initiated successfully."
+  "ACCOUNT_DELETE_PROCESS": "Account deletion process initiated successfully.",
+
+
+  "NOTIFICATION": {
+    "NEW_CALL_NOTIFICATION": "不在着信があります。",
+    "NEW_CONFERENCE_NOTIFICATION": "あなたは次の5分間で電話を受ける",
+    "MISSED_CALL_PING_NOTIFICATION":"さんは今電話通訳ができます。",
+    "LAST_PAYMENT_DUE_NOTIFICATION": "前回の通話が未払いです。",
+    "YOU_JUST_RECEIVED_NEW_JOB_REQUEST": "You just received new job request",
+    "CONGRATS_USER_JUST_PAID_TO_YOU": "おめでとうございます。[USERNAME]があなたに[AMOUNT] [CURRENCY]支払いました！",
+    "PAYMENT_DUE": "支払期日",
+    "PAYMENT_RECEIVED": "支払いを受領しました。",
+    "SEND_INTERPRETER_CALL_REQUEST": "新しい通訳依頼が届きました。",
+    "INTERPRETER_APPROVED_CALL_REQUEST": "通訳者から「対応可能」が届きました。",
+    "SEND_CUSTOMER_UPDATED_CALL_REQUEST": "お客様がリクエストを更新しました。",
+    "NEW_VIDEO_CALL": "新しいビデオ通話"
+}
 }

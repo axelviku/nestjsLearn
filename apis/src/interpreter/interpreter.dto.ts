@@ -27,7 +27,6 @@ export class interpreterDataDto {
   searchKeyword: string;
 
   @IsOptional()
-  @IsMongoId({ message: 'Something went wrong !' })
   @ApiProperty({
     example: '59c8ba74c0d97628bf7fec34',
     required: true,
@@ -35,7 +34,6 @@ export class interpreterDataDto {
   languageFrom: string;
 
   @IsOptional()
-  @IsMongoId({ message: 'Something went wrong !' })
   @ApiProperty({
     example: '59c8ba74c0d97628bf7fec34',
     required: true,
@@ -53,7 +51,6 @@ export class interpreterDataDto {
   expertiseIds: [];
 
   @IsOptional()
-  @IsMongoId({ message: 'Something went wrong !' })
   @ApiProperty({
     example: '59c8ba74c0d97628bf7fec34',
     required: true,
@@ -61,7 +58,6 @@ export class interpreterDataDto {
   countryId: string;
 
   @IsOptional()
-  @IsMongoId({ message: 'Something went wrong !' })
   @ApiProperty({
     example: '59c8ba74c0d97628bf7fec34',
     required: true,
